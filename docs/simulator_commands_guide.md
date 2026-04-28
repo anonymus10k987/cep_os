@@ -73,7 +73,7 @@ If you don't use a `--config` file, you can manually override any parameter dire
 | `--processes` | Any integer | `5` |
 
 *Example: Simulate 20 processes using Round Robin with a quantum of 2:*
-`.\build\os_simulator.exe --interactive --processes 20 --quantum 2`
+`.\build\os_simulator.exe --interactive --processes 20 --scheduler rr --quantum 2`
 
 ---
 
