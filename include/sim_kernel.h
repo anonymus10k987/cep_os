@@ -355,23 +355,42 @@ public:
         };
 
         // ── Header ──────────────────────────────────────────────────
-        std::cout << "╔" << hline() << "╗\n";
+        std::cout << "\u2554" << hline() << "\u2557\n";
         {
-            std::string title = ansi("1;36") + "  Mini OS Kernel Simulator" + ansi("0");
-            std::string right = "Tick: " + ansi("1;33") + padL(current_tick, 5) + ansi("0")
-                              + "  Speed: " + ansi("1;32") + padL(delay_ms, 4) + "ms" + ansi("0")
-                              + (paused ? ("  " + ansi("1;31") + "[PAUSED]" + ansi("0")) : "");
-            // fixed visible widths: title≈26, right≈28
-            std::string row = title + std::string(14, ' ') + right;
+            // Left part (visible chars only, no ANSI)
+            std::string left_vis  = "  Mini OS Kernel Simulator";          // 26 vis
+            std::string right_vis = "Tick: " + padL(current_tick, 5)
+                                  + "  Speed: " + padL(delay_ms, 4) + "ms"
+                                  + (paused ? "  [PAUSED]" : "");
+            int spacer = W - (int)left_vis.size() - (int)right_vis.size();
+            if (spacer < 1) spacer = 1;
+
+            // Build with ANSI colours around the same text
+            std::string row = ansi("1;36") + left_vis + ansi("0")
+                            + std::string(spacer, ' ')
+                            + "Tick: " + ansi("1;33") + padL(current_tick, 5) + ansi("0")
+                            + "  Speed: " + ansi("1;32") + padL(delay_ms, 4) + "ms" + ansi("0")
+                            + (paused ? ("  " + ansi("1;31") + "[PAUSED]" + ansi("0")) : "");
             boxLine(row);
         }
         {
-            std::string row = "  Scheduler: " + ansi("1;35") + padR(scheduler->name(), 22) + ansi("0")
-                            + "Policy: " + ansi("1;35") + config.replacement_policy
-                            + " (" + std::to_string(config.total_physical_frames) + " frames)" + ansi("0");
+            // Left: "  Scheduler: " (13) + name padded to 20 = 33 visible
+            // Right: "Policy: " (8) + policy string
+            std::string sched_vis = "  Scheduler: " + padR(scheduler->name(), 20);
+            std::string policy_vis = "Policy: " + config.replacement_policy
+                                   + " (" + std::to_string(config.total_physical_frames) + " frames)";
+            int spacer = W - (int)sched_vis.size() - (int)policy_vis.size();
+            if (spacer < 1) spacer = 1;
+
+            std::string row = sched_vis + ansi("1;35") + scheduler->name() + ansi("0");
+            // Rebuild properly with colours
+            row = "  Scheduler: " + ansi("1;35") + padR(scheduler->name(), 20) + ansi("0")
+                + std::string(spacer, ' ')
+                + "Policy: " + ansi("1;35") + config.replacement_policy
+                + " (" + std::to_string(config.total_physical_frames) + " frames)" + ansi("0");
             boxLine(row);
         }
-        std::cout << "╠" << hline() << "╣\n";
+        std::cout << "\u2560" << hline() << "\u2563\n";
 
         // ── CPU ─────────────────────────────────────────────────────
         boxLine(ansi("1;36") + "  ** CPU CORE" + ansi("0"));
