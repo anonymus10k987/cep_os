@@ -135,6 +135,8 @@ public:
 
 
 
+        bool was_paused = false;
+
         while (!process_manager.allTerminated() &&
                current_tick < max_ticks &&
                !quit_flag)
@@ -144,15 +146,20 @@ public:
             if (quit_flag) break;
 
             if (!paused) {
+                was_paused = false;
                 tick();
-                printDashboard(delay_ms, paused);
+                printDashboard(delay_ms, false);
                 current_tick++;
+                std::this_thread::sleep_for(std::chrono::milliseconds(delay_ms));
             } else {
-                // Keep redrawing so the PAUSED indicator shows
-                printDashboard(delay_ms, paused);
+                // Only redraw once when we first enter pause state,
+                // then just poll keys every 50ms — no more spawning frames.
+                if (!was_paused) {
+                    printDashboard(delay_ms, true);
+                    was_paused = true;
+                }
+                std::this_thread::sleep_for(std::chrono::milliseconds(50));
             }
-
-            std::this_thread::sleep_for(std::chrono::milliseconds(delay_ms));
         }
 
         if (!quit_flag) {

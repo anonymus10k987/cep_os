@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include <string>
+#include <sstream>
 #include <fstream>
 #include <iostream>
 #include <iomanip>
@@ -80,29 +81,79 @@ public:
 
     // Print scheduling metrics to console
     static void printSchedulingMetrics(const SchedulingMetrics& m) {
-        std::cout << "\n╔══════════════════════════════════════════════════╗\n";
-        std::cout << "║       SCHEDULING METRICS: " << std::setw(20) << std::left
-                  << m.scheduler_name << "  ║\n";
-        std::cout << "╠══════════════════════════════════════════════════╣\n";
-        std::cout << "║  Total Processes:     " << std::setw(26) << m.total_processes << "║\n";
-        std::cout << "║  Total Ticks:         " << std::setw(26) << m.total_ticks << "║\n";
-        std::cout << "║  Context Switches:    " << std::setw(26) << m.context_switches << "║\n";
-        std::cout << std::fixed << std::setprecision(2);
-        std::cout << "║  Avg Waiting Time:    " << std::setw(26) << m.avg_waiting_time << "║\n";
-        std::cout << "║  Avg Turnaround Time: " << std::setw(26) << m.avg_turnaround_time << "║\n";
-        std::cout << "║  Avg Response Time:   " << std::setw(26) << m.avg_response_time << "║\n";
-        std::cout << "║  CPU Utilization:     " << std::setw(24) << m.cpu_utilization << " %║\n";
-        std::cout << "║  Throughput:          " << std::setw(22) << m.throughput << " p/t║\n";
-        std::cout << "╠══════════════════════════════════════════════════╣\n";
-        std::cout << "║  PID  │ Wait  │ Turnaround │ Response           ║\n";
-        std::cout << "║───────┼───────┼────────────┼────────────────────║\n";
+        const int W = 50; // inner box width (visible chars between ║ borders)
+
+        // Count visible chars: skip ANSI escapes and UTF-8 continuation bytes
+        auto visLen = [](const std::string& s) -> int {
+            int v = 0; bool esc = false;
+            for (unsigned char c : s) {
+                if (c == '\033') { esc = true; continue; }
+                if (esc) { if (c == 'm') esc = false; continue; }
+                if (c >= 0x80 && c <= 0xBF) continue;
+                v++;
+            }
+            return v;
+        };
+
+        // Print: ║ content (padded to W) ║
+        auto boxRow = [&](const std::string& content) {
+            int pad = W - visLen(content);
+            std::cout << "\u2551" << content
+                      << (pad > 0 ? std::string(pad, ' ') : "")
+                      << "\u2551\n";
+        };
+
+        auto rpadi = [](int v, int w) {
+            std::string s = std::to_string(v);
+            if ((int)s.size() < w) s = std::string(w - s.size(), ' ') + s;
+            return s;
+        };
+        auto rpadf = [](double v, int w, int prec = 2) {
+            std::ostringstream o;
+            o << std::fixed << std::setprecision(prec) << v;
+            std::string s = o.str();
+            if ((int)s.size() < w) s = std::string(w - s.size(), ' ') + s;
+            return s;
+        };
+        auto lpadf = [](const std::string& s, int w) {
+            if ((int)s.size() >= w) return s.substr(0, w);
+            return s + std::string(w - s.size(), ' ');
+        };
+
+        auto hline = [&]() {
+            std::string s; for (int i = 0; i < W; i++) s += "\u2550"; return s;
+        };
+
+        // ── Header ──────────────────────────────────────────────────────────
+        std::cout << "\n\u2554" << hline() << "\u2557\n";
+        boxRow("  SCHEDULING METRICS: " + lpadf(m.scheduler_name, W - 22));
+        std::cout << "\u2560" << hline() << "\u2563\n";
+
+        // ── Stats ────────────────────────────────────────────────────────────
+        const int LW = 22; // label column width (label + trailing spaces)
+        const int VW = W - LW; // value column width
+        boxRow("  Total Processes:    " + rpadi(m.total_processes, VW));
+        boxRow("  Total Ticks:        " + rpadi(m.total_ticks, VW));
+        boxRow("  Context Switches:   " + rpadi(m.context_switches, VW));
+        boxRow("  Avg Waiting Time:   " + rpadf(m.avg_waiting_time, VW));
+        boxRow("  Avg Turnaround:     " + rpadf(m.avg_turnaround_time, VW));
+        boxRow("  Avg Response Time:  " + rpadf(m.avg_response_time, VW));
+        boxRow("  CPU Utilization:    " + rpadf(m.cpu_utilization, VW - 2) + " %");
+        boxRow("  Throughput:         " + rpadf(m.throughput, VW - 4) + " p/t");
+
+        // ── Per-process table ─────────────────────────────────────────────────
+        std::cout << "\u2560" << hline() << "\u2563\n";
+        boxRow("  PID   Wait   Turnaround   Response");
+        boxRow("  ----  -----  ----------  ---------");
         for (size_t i = 0; i < m.pids.size(); i++) {
-            std::cout << "║  " << std::setw(4) << m.pids[i] << " │ "
-                      << std::setw(5) << m.waiting_times[i] << " │ "
-                      << std::setw(10) << m.turnaround_times[i] << " │ "
-                      << std::setw(18) << m.response_times[i] << " ║\n";
+            std::string row = "  "
+                + rpadi(m.pids[i], 3) + "   "
+                + rpadi(m.waiting_times[i], 5) + "  "
+                + rpadi(m.turnaround_times[i], 10) + "  "
+                + rpadi(m.response_times[i], 9);
+            boxRow(row);
         }
-        std::cout << "╚══════════════════════════════════════════════════╝\n\n";
+        std::cout << "\u255a" << hline() << "\u255d\n\n";
     }
 
     // Export metrics to JSON file
