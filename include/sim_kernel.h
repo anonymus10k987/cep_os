@@ -127,8 +127,8 @@ public:
         clearScreen();
         std::cout << ansi("1;36") << R"(
   ╔══════════════════════════════════════════════════════════════════╗
-  ║        Mini OS Kernel Simulator  —  Interactive TUI Mode        ║
-  ║  Keys:  SPACE=pause  +/-=speed  q=quit                         ║
+  ║        Mini OS Kernel Simulator  -  Interactive TUI Mode         ║
+  ║  Keys:  SPACE=pause  +/-=speed  q=quit                           ║
   ╚══════════════════════════════════════════════════════════════════╝
 )" << ansi("0") << std::flush;
         std::this_thread::sleep_for(std::chrono::milliseconds(1200));
