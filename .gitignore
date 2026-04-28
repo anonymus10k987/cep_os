@@ -1,6 +1,4 @@
-# Compiled binaries
-build/
-*.exe
+# Intermediate object files only (compiled exe is kept)
 *.o
 *.obj
 
