@@ -1,0 +1,24 @@
+# Compiled binaries
+build/
+*.exe
+*.o
+*.obj
+
+# Runtime output / logs
+output/logs/
+output/*.json
+output/*.csv
+
+# VS Code local settings (keep launch.json since it's useful)
+.vscode/settings.json
+.vscode/*.log
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+analysis/__pycache__/
+
+# Windows artifacts
+Thumbs.db
+Desktop.ini
