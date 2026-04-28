@@ -336,19 +336,22 @@ public:
             return s;
         };
         auto boxLine = [&](const std::string& content) {
-            // Pad / truncate to W chars (ignoring ANSI escapes for width)
             std::string row = content;
-            // approximate visible length (strip \033[...m)
+            // Count visible characters correctly:
+            //   - Skip ANSI escape sequences  (\033[...m)
+            //   - Skip UTF-8 continuation bytes (0x80-0xBF) so multi-byte
+            //     chars like █ ░ ║ count as 1 visible column, not 3.
             int vis = 0;
             bool esc = false;
-            for (char c : row) {
+            for (unsigned char c : row) {
                 if (c == '\033') { esc = true; continue; }
                 if (esc) { if (c == 'm') esc = false; continue; }
+                if (c >= 0x80 && c <= 0xBF) continue; // UTF-8 continuation byte
                 vis++;
             }
             int pad = W - vis;
             if (pad > 0) row += std::string(pad, ' ');
-            std::cout << "║" << row << "║\n";
+            std::cout << "\u2551" << row << "\u2551\n";
         };
 
         // ── Header ──────────────────────────────────────────────────
@@ -371,7 +374,7 @@ public:
         std::cout << "╠" << hline() << "╣\n";
 
         // ── CPU ─────────────────────────────────────────────────────
-        boxLine(ansi("1;36") + "  ▶ CPU CORE" + ansi("0"));
+        boxLine(ansi("1;36") + "  ** CPU CORE" + ansi("0"));
         if (running_process) {
             PCB* rp = running_process;
             int total  = rp->total_cpu_burst;
@@ -398,7 +401,7 @@ public:
         std::cout << "╠" << hline() << "╣\n";
 
         // ── Process Table ────────────────────────────────────────────
-        boxLine(ansi("1;36") + "  ▶ PROCESS TABLE" + ansi("0"));
+        boxLine(ansi("1;36") + "  ** PROCESS TABLE" + ansi("0"));
         boxLine(ansi("90") + "  PID  Name       State       Burst  Wait   I/O   Pages" + ansi("0"));
         for (auto& p : process_manager.getAllProcesses()) {
             std::string stateColor;
@@ -426,7 +429,7 @@ public:
         // ── Ready Queue ──────────────────────────────────────────────
         {
             auto rq = process_manager.getProcessesByState(ProcessState::READY);
-            std::string row = ansi("1;33") + "  ▶ READY QUEUE  " + ansi("0");
+            std::string row = ansi("1;33") + "  ** READY QUEUE  " + ansi("0");
             if (rq.empty()) {
                 row += ansi("90") + "(empty)" + ansi("0");
             } else {
@@ -437,7 +440,7 @@ public:
         }
         {
             auto wq = process_manager.getProcessesByState(ProcessState::WAITING);
-            std::string row = ansi("1;34") + "  ▶ I/O WAITING  " + ansi("0");
+            std::string row = ansi("1;34") + "  ** I/O WAITING  " + ansi("0");
             if (wq.empty()) {
                 row += ansi("90") + "(empty)" + ansi("0");
             } else {
@@ -449,7 +452,7 @@ public:
         std::cout << "╠" << hline() << "╣\n";
 
         // ── Memory Frames ────────────────────────────────────────────
-        boxLine(ansi("1;36") + "  ▶ PHYSICAL MEMORY  " + ansi("0")
+        boxLine(ansi("1;36") + "  ** PHYSICAL MEMORY  " + ansi("0")
               + std::to_string(memory_manager->getFrameAllocator().getAllocatedCount())
               + "/" + std::to_string(config.total_physical_frames) + " frames used");
         {
@@ -491,7 +494,7 @@ public:
         std::cout << "╠" << hline() << "╣\n";
 
         // ── Live Metrics ─────────────────────────────────────────────
-        boxLine(ansi("1;36") + "  ▶ LIVE METRICS" + ansi("0"));
+        boxLine(ansi("1;36") + "  ** LIVE METRICS" + ansi("0"));
         {
             double fr = memory_manager->getPageFaultRate() * 100.0;
             int faults = memory_manager->getTotalPageFaults();
